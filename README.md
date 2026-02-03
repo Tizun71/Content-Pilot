@@ -1,11 +1,49 @@
 <div align="center">
+  <img src="frontend/public/logo.png" alt="Content Pilot Logo" width="120" height="120" />
   <h1>Content Pilot</h1>
   <p><strong>AI-Powered Social Media Automation</strong></p>
+  
+  ![React](https://img.shields.io/badge/React-19.0.0-61DAFB?logo=react&logoColor=white)
+  ![TypeScript](https://img.shields.io/badge/TypeScript-5.8.2-3178C6?logo=typescript&logoColor=white)
+  ![Vite](https://img.shields.io/badge/Vite-6.2.0-646CFF?logo=vite&logoColor=white)
+  ![Node.js](https://img.shields.io/badge/Node.js-18+-339933?logo=node.js&logoColor=white)
+  ![Express](https://img.shields.io/badge/Express-4.18.2-000000?logo=express&logoColor=white)
+  ![ReactFlow](https://img.shields.io/badge/ReactFlow-11.10.1-FF0072?logo=react&logoColor=white)
+  ![Gemini](https://img.shields.io/badge/Gemini-2.5_Flash-4285F4?logo=google&logoColor=white)
+  ![Twitter API](https://img.shields.io/badge/Twitter_API-v2-1DA1F2?logo=twitter&logoColor=white)
+  ![Lucide React](https://img.shields.io/badge/Lucide_React-Latest-326CE5?logo=lucide&logoColor=white)
 </div>
 
 ---
 
-## About the Project
+## 📖 Table of Contents
+
+1. [🌟 About the Project](#-about-the-project)
+2. [🚀 Features](#-features)
+3. [🎯 Core Objectives](#-core-objectives)
+4. [📦 Tech Stack](#-tech-stack)
+5. [🛠️ Current Work](#️-current-work)
+6. [Roadmap](#roadmap)
+7. [⚡ Quick Start](#-quick-start)
+   - [Prerequisites](#prerequisites)
+   - [Clone Repository](#clone-the-repository)
+   - [Environment Setup](#environment-setup)
+   - [Install Dependencies](#install-dependencies)
+   - [Start Development Servers](#start-development-servers)
+8. [🔧 Twitter OAuth Configuration](#-twitter-oauth-configuration)
+9. [📖 How to Use](#-how-to-use)
+10. [🏗️ Project Structure](#️-project-structure)
+11. [🔐 API Endpoints](#-api-endpoints)
+12. [🐛 Troubleshooting](#-troubleshooting)
+13. [💡 What I Learned](#-what-i-learned)
+14. [🎨 Design Philosophy](#-design-philosophy)
+15. [🚧 Challenges I Faced](#-challenges-i-faced)
+16. [🌟 Why This Project Matters](#-why-this-project-matters)
+17. [📄 License](#-license)
+
+---
+
+## 🌟 About the Project
 
 This project was inspired by a very common problem in organic marketing: **everyone knows consistency matters, but very few people can maintain it.**
 
