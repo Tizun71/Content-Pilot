@@ -9,9 +9,8 @@ steps:
       - '-t'
       - 'gcr.io/$PROJECT_ID/content-pilot-backend:latest'
       - '-f'
-      - 'Dockerfile'
-      - '.'
-    dir: 'backend'
+      - 'backend/Dockerfile'
+      - './backend'
     id: 'build-backend'
 
   # Build frontend image
@@ -23,9 +22,8 @@ steps:
       - '-t'
       - 'gcr.io/$PROJECT_ID/content-pilot-frontend:latest'
       - '-f'
-      - 'Dockerfile'
-      - '.'
-    dir: 'frontend'
+      - 'frontend/Dockerfile'
+      - './frontend'
     id: 'build-frontend'
 
   # Push backend image to Container Registry
@@ -35,6 +33,13 @@ steps:
       - 'gcr.io/$PROJECT_ID/content-pilot-backend:$COMMIT_SHA'
     id: 'push-backend'
     waitFor: ['build-backend']
+  
+  # Push backend latest tag
+  - name: 'gcr.io/cloud-builders/docker'
+    args:
+      - 'push'
+      - 'gcr.io/$PROJECT_ID/content-pilot-backend:latest'
+    waitFor: ['build-backend']
 
   # Push frontend image to Container Registry
   - name: 'gcr.io/cloud-builders/docker'
@@ -42,6 +47,13 @@ steps:
       - 'push'
       - 'gcr.io/$PROJECT_ID/content-pilot-frontend:$COMMIT_SHA'
     id: 'push-frontend'
+    waitFor: ['build-frontend']
+  
+  # Push frontend latest tag
+  - name: 'gcr.io/cloud-builders/docker'
+    args:
+      - 'push'
+      - 'gcr.io/$PROJECT_ID/content-pilot-frontend:latest'
     waitFor: ['build-frontend']
 
   # Deploy backend to Cloud Run
