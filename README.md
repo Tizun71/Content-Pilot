@@ -1,5 +1,5 @@
 <div align="center">
-  <img src="frontend/public/logo.png" alt="Content Pilot Logo" width="120" height="120" />
+  <img src= "https://raw.githubusercontent.com/Tizun71/Content-Pilot/refs/heads/main/images/logo-content-pilot.png" alt="Content Pilot Logo" width="120" height="120" />
   <h1>Content Pilot</h1>
   <p><strong>AI-Powered Social Media Automation</strong></p>
   
