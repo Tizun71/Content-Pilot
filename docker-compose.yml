@@ -3,8 +3,9 @@ version: '3.8'
 services:
   backend:
     build:
-      context: ./backend
+      context: .
       dockerfile: Dockerfile
+      target: backend-runtime
     ports:
       - "3001:3001"
     environment:
@@ -21,8 +22,9 @@ services:
 
   frontend:
     build:
-      context: ./frontend
+      context: .
       dockerfile: Dockerfile
+      target: frontend-runtime
     ports:
       - "3000:80"
     environment:
