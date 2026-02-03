@@ -305,14 +305,8 @@ export const generateImage = async (prompt: string, referenceImageBase64?: strin
       }
 
       const response = await ai.models.generateContent({
-        model: 'imagen-3.0-generate-001', // Image generation model
+        model: "gemini-2.5-flash-image", 
         contents: { parts },
-        config: {
-          imageConfig: {
-            aspectRatio: "1:1",
-            numberOfImages: 1 // Generate one at a time for free tier
-          }
-        },
       });
 
       for (const part of response.candidates?.[0]?.content?.parts || []) {
