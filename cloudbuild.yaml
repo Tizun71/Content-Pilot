@@ -1,121 +1,113 @@
 # Google Cloud Build configuration for CI/CD
 steps:
-  # Build backend image
   - name: 'gcr.io/cloud-builders/docker'
+    id: build-backend
     args:
-      - 'build'
-      - '-t'
-      - 'gcr.io/$PROJECT_ID/content-pilot-backend:$COMMIT_SHA'
-      - '-t'
-      - 'gcr.io/$PROJECT_ID/content-pilot-backend:latest'
-      - '-f'
-      - 'backend/Dockerfile'
-      - './backend'
-    id: 'build-backend'
+      - build
+      - -t
+      - gcr.io/$PROJECT_ID/content-pilot-backend:$COMMIT_SHA
+      - -t
+      - gcr.io/$PROJECT_ID/content-pilot-backend:latest
+      - -f
+      - backend/Dockerfile
+      - backend
 
-  # Build frontend image
   - name: 'gcr.io/cloud-builders/docker'
+    id: build-frontend
     args:
-      - 'build'
-      - '-t'
-      - 'gcr.io/$PROJECT_ID/content-pilot-frontend:$COMMIT_SHA'
-      - '-t'
-      - 'gcr.io/$PROJECT_ID/content-pilot-frontend:latest'
-      - '-f'
-      - 'frontend/Dockerfile'
-      - './frontend'
-    id: 'build-frontend'
+      - build
+      - -t
+      - gcr.io/$PROJECT_ID/content-pilot-frontend:$COMMIT_SHA
+      - -t
+      - gcr.io/$PROJECT_ID/content-pilot-frontend:latest
+      - -f
+      - frontend/Dockerfile
+      - frontend
 
-  # Push backend image to Container Registry
   - name: 'gcr.io/cloud-builders/docker'
-    args:
-      - 'push'
-      - 'gcr.io/$PROJECT_ID/content-pilot-backend:$COMMIT_SHA'
-    id: 'push-backend'
+    id: push-backend
     waitFor: ['build-backend']
-  
-  # Push backend latest tag
-  - name: 'gcr.io/cloud-builders/docker'
     args:
-      - 'push'
-      - 'gcr.io/$PROJECT_ID/content-pilot-backend:latest'
+      - push
+      - gcr.io/$PROJECT_ID/content-pilot-backend:$COMMIT_SHA
+
+  - name: 'gcr.io/cloud-builders/docker'
     waitFor: ['build-backend']
-
-  # Push frontend image to Container Registry
-  - name: 'gcr.io/cloud-builders/docker'
     args:
-      - 'push'
-      - 'gcr.io/$PROJECT_ID/content-pilot-frontend:$COMMIT_SHA'
-    id: 'push-frontend'
-    waitFor: ['build-frontend']
-  
-  # Push frontend latest tag
-  - name: 'gcr.io/cloud-builders/docker'
-    args:
-      - 'push'
-      - 'gcr.io/$PROJECT_ID/content-pilot-frontend:latest'
-    waitFor: ['build-frontend']
+      - push
+      - gcr.io/$PROJECT_ID/content-pilot-backend:latest
 
-  # Deploy backend to Cloud Run
+  - name: 'gcr.io/cloud-builders/docker'
+    id: push-frontend
+    waitFor: ['build-frontend']
+    args:
+      - push
+      - gcr.io/$PROJECT_ID/content-pilot-frontend:$COMMIT_SHA
+
+  - name: 'gcr.io/cloud-builders/docker'
+    waitFor: ['build-frontend']
+    args:
+      - push
+      - gcr.io/$PROJECT_ID/content-pilot-frontend:latest
+
   - name: 'gcr.io/google.com/cloudsdktool/cloud-sdk'
-    entrypoint: gcloud
-    args:
-      - 'run'
-      - 'deploy'
-      - 'content-pilot-backend'
-      - '--image'
-      - 'gcr.io/$PROJECT_ID/content-pilot-backend:$COMMIT_SHA'
-      - '--region'
-      - 'asia-southeast1'
-      - '--platform'
-      - 'managed'
-      - '--allow-unauthenticated'
-      - '--set-env-vars'
-      - 'NODE_ENV=production,PORT=3001'
-      - '--max-instances'
-      - '10'
-      - '--min-instances'
-      - '0'
-      - '--memory'
-      - '512Mi'
-      - '--cpu'
-      - '1'
-    id: 'deploy-backend'
+    id: deploy-backend
     waitFor: ['push-backend']
-
-  # Deploy frontend to Cloud Run
-  - name: 'gcr.io/google.com/cloudsdktool/cloud-sdk'
     entrypoint: gcloud
     args:
-      - 'run'
-      - 'deploy'
-      - 'content-pilot-frontend'
-      - '--image'
-      - 'gcr.io/$PROJECT_ID/content-pilot-frontend:$COMMIT_SHA'
-      - '--region'
-      - 'asia-southeast1'
-      - '--platform'
-      - 'managed'
-      - '--allow-unauthenticated'
-      - '--max-instances'
+      - run
+      - deploy
+      - content-pilot-backend
+      - --image
+      - gcr.io/$PROJECT_ID/content-pilot-backend:$COMMIT_SHA
+      - --region
+      - asia-southeast1
+      - --platform
+      - managed
+      - --allow-unauthenticated
+      - --set-env-vars
+      - NODE_ENV=production,PORT=3001
+      - --max-instances
       - '10'
-      - '--min-instances'
+      - --min-instances
       - '0'
-      - '--memory'
-      - '512Mi'
-      - '--cpu'
+      - --memory
+      - 512Mi
+      - --cpu
       - '1'
-    id: 'deploy-frontend'
+
+  - name: 'gcr.io/google.com/cloudsdktool/cloud-sdk'
+    id: deploy-frontend
     waitFor: ['push-frontend']
+    entrypoint: gcloud
+    args:
+      - run
+      - deploy
+      - content-pilot-frontend
+      - --image
+      - gcr.io/$PROJECT_ID/content-pilot-frontend:$COMMIT_SHA
+      - --region
+      - asia-southeast1
+      - --platform
+      - managed
+      - --allow-unauthenticated
+      - --max-instances
+      - '10'
+      - --min-instances
+      - '0'
+      - --memory
+      - 512Mi
+      - --cpu
+      - '1'
 
 images:
-  - 'gcr.io/$PROJECT_ID/content-pilot-backend:$COMMIT_SHA'
-  - 'gcr.io/$PROJECT_ID/content-pilot-backend:latest'
-  - 'gcr.io/$PROJECT_ID/content-pilot-frontend:$COMMIT_SHA'
-  - 'gcr.io/$PROJECT_ID/content-pilot-frontend:latest'
+  - gcr.io/$PROJECT_ID/content-pilot-backend:$COMMIT_SHA
+  - gcr.io/$PROJECT_ID/content-pilot-backend:latest
+  - gcr.io/$PROJECT_ID/content-pilot-frontend:$COMMIT_SHA
+  - gcr.io/$PROJECT_ID/content-pilot-frontend:latest
 
 options:
   logging: CLOUD_LOGGING_ONLY
-  machineType: 'N1_HIGHCPU_8'
+  machineType: N1_HIGHCPU_8
 
 timeout: '1200s'
