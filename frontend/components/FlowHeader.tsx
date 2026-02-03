@@ -54,8 +54,8 @@ export const FlowHeader: React.FC<FlowHeaderProps> = ({
       {/* Top Row: Branding & Actions */}
       <div className="flex items-center justify-between px-6 py-2 border-b border-[#27272a]/50">
          <div className="flex items-center gap-3">
-            <div className="p-1.5 bg-zinc-800 rounded-md border border-zinc-700">
-                <Zap className="w-4 h-4 text-amber-400 fill-amber-400" />
+            <div className="p-1.5 rounded-md">
+                <img src="/logo-content-pilot.png" alt="Content Pilot Logo" className="w-10 h-10" />
             </div>
             <div>
                 <h1 className="text-sm font-bold tracking-wider text-zinc-100 leading-none">CONTENT PILOT</h1>
