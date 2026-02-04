@@ -1,63 +1,74 @@
-import express, { Application } from 'express';
+import express from 'express';
 import cors from 'cors';
-import dotenv from 'dotenv';
-import session from 'express-session';
-import cookieParser from 'cookie-parser';
-import authRoutes from './routes/auth';
-import twitterRoutes from './routes/twitter';
+import { config, validateConfig } from './config';
 import geminiRoutes from './routes/gemini';
 
-// Load environment variables
-dotenv.config();
+const app = express();
 
-const app: Application = express();
-const PORT = process.env.PORT || 3001;
+// Validate config on startup
+validateConfig();
 
 // Middleware
 app.use(cors({
-  origin: process.env.FRONTEND_URL || 'http://localhost:5173',
-  credentials: true,
+  origin: config.frontendUrl,
+  credentials: true
 }));
+app.use(express.json({ limit: '50mb' }));
+app.use(express.urlencoded({ extended: true, limit: '50mb' }));
 
-app.use(express.json());
-app.use(express.urlencoded({ extended: true }));
-app.use(cookieParser());
-
-// Session configuration
-app.use(session({
-  secret: process.env.SESSION_SECRET || 'your-secret-key',
-  resave: false,
-  saveUninitialized: false,
-  cookie: {
-    secure: process.env.NODE_ENV === 'production',
-    httpOnly: true,
-    maxAge: 24 * 60 * 60 * 1000, // 24 hours
-  }
-}));
-
-// Routes
-app.use('/auth', authRoutes);
-app.use('/api/twitter', twitterRoutes);
-app.use('/api/gemini', geminiRoutes);
-
-// Health check
+// Health check endpoint (MUST be before other routes)
 app.get('/health', (req, res) => {
-  res.json({ status: 'ok', message: 'Server is running' });
+  res.status(200).json({ 
+    status: 'healthy',
+    timestamp: new Date().toISOString(),
+    uptime: process.uptime(),
+    port: config.port,
+    nodeEnv: config.nodeEnv
+  });
 });
 
-// Error handling middleware
-app.use((err: any, req: express.Request, res: express.Response, next: express.NextFunction) => {
-  console.error(err.stack);
-  res.status(500).json({
-    error: 'Something went wrong!',
-    message: process.env.NODE_ENV === 'development' ? err.message : undefined
+// API Routes
+app.use('/api/gemini', geminiRoutes);
+
+// Root endpoint
+app.get('/', (req, res) => {
+  res.json({ 
+    message: 'Content Pilot API',
+    status: 'running',
+    version: '1.0.0'
   });
 });
 
 // Start server
-app.listen(PORT, () => {
-  console.log(`🚀 Server is running on http://localhost:${PORT}`);
-  console.log(`📱 Frontend URL: ${process.env.FRONTEND_URL || 'http://localhost:5173'}`);
-});
+const startServer = () => {
+  const PORT = Number(config.port);
+  
+  const server = app.listen(PORT, '0.0.0.0', () => {
+    console.log(`✅ Server running on port ${PORT}`);
+    console.log(`Environment: ${config.nodeEnv}`);
+    console.log(`CORS enabled for: ${config.frontendUrl}`);
+  });
+
+  // Graceful shutdown
+  process.on('SIGTERM', () => {
+    console.log('SIGTERM received, shutting down gracefully...');
+    server.close(() => {
+      console.log('Server closed');
+      process.exit(0);
+    });
+  });
+
+  // Handle errors
+  server.on('error', (error: NodeJS.ErrnoException) => {
+    if (error.code === 'EADDRINUSE') {
+      console.error(`❌ Port ${PORT} is already in use`);
+    } else {
+      console.error('❌ Server error:', error);
+    }
+    process.exit(1);
+  });
+};
+
+startServer();
 
 export default app;
