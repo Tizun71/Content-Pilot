@@ -5,6 +5,7 @@ import session from 'express-session';
 import cookieParser from 'cookie-parser';
 import authRoutes from './routes/auth';
 import twitterRoutes from './routes/twitter';
+import geminiRoutes from './routes/gemini';
 
 // Load environment variables
 dotenv.config();
@@ -37,6 +38,7 @@ app.use(session({
 // Routes
 app.use('/auth', authRoutes);
 app.use('/api/twitter', twitterRoutes);
+app.use('/api/gemini', geminiRoutes);
 
 // Health check
 app.get('/health', (req, res) => {
