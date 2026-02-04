@@ -42,6 +42,8 @@ export const planWorkflow = async (intent: string): Promise<any> => {
   try {
     const startTime = Date.now();
     
+    console.log('[Opik] Plan Workflow - Prompt:', prompt.substring(0, 100) + '...');
+    
     const response = await ai.models.generateContent({
       model: "gemini-2.5-flash",
       contents: prompt,
@@ -51,6 +53,18 @@ export const planWorkflow = async (intent: string): Promise<any> => {
     });
 
     const result = JSON.parse(response.text || '{}');
+    
+    const latency = Date.now() - startTime;
+    
+    console.log('[Opik] Plan Workflow - Result:', {
+      latency_ms: latency,
+      token_usage: response.usageMetadata,
+      modules_count: result.modules?.length || 0
+    });
+    
+    // Evaluate workflow quality
+    const evaluationScore = await evaluateWorkflowQuality(intent, result);
+    console.log('[Opik] Workflow Planning Quality Score:', evaluationScore);
     
     trace.end();
 
@@ -75,6 +89,8 @@ export const scanTopic = async (topic: string): Promise<CrawlResult> => {
   try {
     const startTime = Date.now();
     
+    console.log('[Opik] Scan Topic - Query:', { topic, module: 'SEARCH' });
+    
     const response = await ai.models.generateContent({
       model: "gemini-2.5-flash",
       contents: prompt,
@@ -86,8 +102,22 @@ export const scanTopic = async (topic: string): Promise<CrawlResult> => {
       sources: extractSources(response),
       rawText: response.text || ""
     };
+    
+    const latency = Date.now() - startTime;
+    
+    console.log('[Opik] Search Results:', {
+      summary_length: result.summary.length,
+      sources_count: result.sources.length,
+      latency_ms: latency,
+      has_grounding: result.sources.length > 0
+    });
 
     const searchQualityScore = await evaluateSearchQuality(topic, result, trace);
+    
+    console.log('[Opik] Search Effectiveness Score:', searchQualityScore, {
+      topic,
+      sources_found: result.sources.length
+    });
 
     trace.end();
 
@@ -122,6 +152,15 @@ export const generatePost = async (
   try {
     const startTime = Date.now();
     
+    console.log('[Opik] Content Generation - Params:', {
+      context_preview: context.substring(0, 100),
+      tone,
+      platform,
+      language,
+      length,
+      has_image: !!imageBase64
+    });
+    
     const response = await ai.models.generateContent({
       model: "gemini-2.5-flash",
       contents: imageBase64 
@@ -134,6 +173,16 @@ export const generatePost = async (
     });
 
     const result: GeneratedPost = JSON.parse(response.text || '{}');
+    
+    const latency = Date.now() - startTime;
+    
+    console.log('[Opik] Generated Content:', {
+      content_length: result.content.length,
+      hashtags_count: result.hashtags.length,
+      latency_ms: latency,
+      platform,
+      tone
+    });
 
     const evaluationResults = await evaluateContentQuality(
       trace,
@@ -141,6 +190,15 @@ export const generatePost = async (
       result,
       { tone, platform, language }
     );
+    
+    console.log('[Opik] Content Quality Evaluation:', {
+      overall_score: evaluationResults.overall_score,
+      engagement: evaluationResults.engagement_score,
+      clarity: evaluationResults.clarity_score,
+      tone_match: evaluationResults.tone_score,
+      platform_fit: evaluationResults.platform_score,
+      red_flags: evaluationResults.red_flags_count
+    });
 
     trace.end();
 
@@ -168,16 +226,44 @@ export const generateImage = async (
   try {
     const startTime = Date.now();
     
+    const fullPrompt = `${prompt}. Style: ${style || 'Minimal & Clean'}`;
+    
+    // Log image generation request
+    console.log('[Opik] Image Generation - Request:', {
+      prompt: prompt.substring(0, 200),
+      style,
+      count,
+      has_reference: !!referenceImage
+    });
+    
     const response = await ai.models.generateImages({
       model: 'imagen-3.0-generate-002',
-      prompt: `${prompt}. Style: ${style || 'Minimal & Clean'}`,
+      prompt: fullPrompt,
       config: { numberOfImages: count }
     });
 
     const images = response.generatedImages?.map(img => img.image?.imageBytes).filter((img): img is string => img !== undefined) || [];
+    
+    const latency = Date.now() - startTime;
+    
+    // Log image generation results
+    console.log('[Opik] Generated Images:', {
+      images_count: images.length,
+      requested_count: count,
+      success_rate: images.length / count,
+      latency_ms: latency,
+      style
+    });
 
     if (images.length > 0) {
       const alignmentScore = await evaluateImageTextAlignment(trace, prompt, images[0]);
+      
+      // Log image quality evaluation
+      console.log('[Opik] Image Quality Score:', alignmentScore, {
+        prompt_preview: prompt.substring(0, 100),
+        style,
+        images_generated: images.length
+      });
     }
     
     trace.end();
@@ -187,6 +273,47 @@ export const generateImage = async (
     throw error;
   }
 };
+
+async function evaluateWorkflowQuality(
+  intent: string,
+  workflowPlan: any
+): Promise<number> {
+  const ai = getAiClient();
+  
+  const evalPrompt = `
+    You are evaluating the quality of a workflow plan for social media content creation.
+    
+    User Intent: "${intent}"
+    Workflow Plan: ${JSON.stringify(workflowPlan)}
+    
+    Rate the workflow quality on these criteria (1-10 each):
+    1. Intent Understanding: Does the workflow understand the user's intent?
+    2. Module Selection: Are the right modules selected?
+    3. Configuration: Are module parameters properly configured?
+    4. Completeness: Does the workflow cover all necessary steps?
+    5. Efficiency: Is the workflow optimized and not redundant?
+    
+    Return JSON: { intent_understanding: number, module_selection: number, configuration: number, completeness: number, efficiency: number, overall: number, reasoning: string }
+  `;
+  
+  try {
+    const evalResponse = await ai.models.generateContent({
+      model: "gemini-2.5-flash",
+      contents: evalPrompt,
+      config: { responseMimeType: "application/json" }
+    });
+    
+    const evalResult = JSON.parse(evalResponse.text || '{}');
+    
+    // Log evaluation result
+    console.log('[Opik] Workflow Quality Evaluation:', evalResult);
+    
+    return evalResult.overall || 5;
+  } catch (error) {
+    console.error('Workflow evaluation error:', error);
+    return 5; // Default neutral score
+  }
+}
 
 async function evaluateSearchQuality(
   topic: string, 
