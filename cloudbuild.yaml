@@ -61,7 +61,7 @@ steps:
       - --image
       - gcr.io/$PROJECT_ID/content-pilot-backend:$COMMIT_SHA
       - --region
-      - asia-southeast1
+      - asia-east2
       - --platform
       - managed
       - --allow-unauthenticated
@@ -87,7 +87,7 @@ steps:
       - --image
       - gcr.io/$PROJECT_ID/content-pilot-frontend:$COMMIT_SHA
       - --region
-      - asia-southeast1
+      - asia-east2
       - --platform
       - managed
       - --allow-unauthenticated

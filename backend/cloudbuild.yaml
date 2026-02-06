@@ -1,0 +1,27 @@
+steps:
+  # Build Docker image for backend
+  - name: 'gcr.io/cloud-builders/docker'
+    args: ['build', '-t', 'gcr.io/$PROJECT_ID/backend', './backend']
+
+  # Push image to Google Container Registry
+  - name: 'gcr.io/cloud-builders/docker'
+    args: ['push', 'gcr.io/$PROJECT_ID/backend']
+
+  # Deploy to Cloud Run
+  - name: 'gcr.io/cloud-builders/gcloud'
+    args:
+      - 'run'
+      - 'deploy'
+      - 'backend'
+      - '--image=gcr.io/$PROJECT_ID/backend'
+      - '--platform=managed'
+      - '--region=asia-east2'
+      - '--allow-unauthenticated'
+      - '--port=8080'
+
+# Optionally, set substitutions for region, service name, etc.
+substitutions:
+  _REGION: 'asia-east2'
+  _SERVICE: 'backend'
+
+# Cloud Run expects the container to listen on port 8080

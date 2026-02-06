@@ -9,6 +9,9 @@
     "start": "node dist/server.js",
     "lint": "eslint . --ext .ts"
   },
+  "engines": {
+        "node": "16.x"
+    },
   "keywords": ["oauth", "twitter", "x", "express"],
   "author": "",
   "license": "ISC",
