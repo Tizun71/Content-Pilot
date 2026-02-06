@@ -1,6 +1,5 @@
 // Twitter OAuth via Backend Server
-const BACKEND_URL = process.env.BACKEND_URL || 'http://localhost:3001';
-
+const BACKEND_URL = process.env.VITE_BACKEND_URL || 'http://localhost:3001';
 // --- Auth Flow via Backend ---
 
 export const loginWithTwitter = async (): Promise<{ authenticated: boolean; user: any }> => {

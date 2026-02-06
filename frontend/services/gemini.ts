@@ -1,6 +1,7 @@
 import { CrawlResult, GeneratedPost } from "../types";
 
 const API_BASE_URL = process.env.VITE_BACKEND_URL || 'http://localhost:3001';
+console.log('API_BASE_URL:', API_BASE_URL);
 
 export const planWorkflow = async (intent: string): Promise<any> => {
   try {
