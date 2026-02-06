@@ -1,7 +1,10 @@
 import express from 'express';
 import cors from 'cors';
+import session from 'express-session';
+import cookieParser from 'cookie-parser';
 import { config, validateConfig } from './config/index.js';
 import geminiRoutes from './routes/gemini.js';
+import authRoutes from './routes/auth.js';
 
 const app = express();
 
@@ -15,6 +18,17 @@ app.use(cors({
 }));
 app.use(express.json({ limit: '50mb' }));
 app.use(express.urlencoded({ extended: true, limit: '50mb' }));
+app.use(cookieParser());
+app.use(session({
+  secret: config.session.secret,
+  resave: false,
+  saveUninitialized: false,
+  cookie: {
+    secure: config.nodeEnv === 'production',
+    httpOnly: true,
+    maxAge: 24 * 60 * 60 * 1000 // 24 hours
+  }
+}));
 
 // Health check endpoint (MUST be before other routes)
 app.get('/health', (req, res) => {
@@ -28,6 +42,7 @@ app.get('/health', (req, res) => {
 });
 
 // API Routes
+app.use('/auth', authRoutes);
 app.use('/api/gemini', geminiRoutes);
 
 // Root endpoint
