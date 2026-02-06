@@ -10,9 +10,6 @@
     "start": "node dist/server.js",
     "lint": "eslint . --ext .ts"
   },
-  "engines": {
-    "node": "16.x"
-  },
   "overrides": {
     "ansi-escapes": "4.3.2"
   },
