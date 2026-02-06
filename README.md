@@ -154,20 +154,33 @@ Create `.env` files for both frontend and backend before running the app.
 #### Frontend (`frontend/.env`)
 
 ```env
-GEMINI_API_KEY=your_gemini_api_key_here
-BACKEND_URL=http://localhost:3001
+VITE_BACKEND_URL=http://localhost:3001
 ```
 
 #### Backend (`backend/.env`)
 
 ```env
 PORT=3001
-FRONTEND_URL=http://localhost:3000
+NODE_ENV=development
+FRONTEND_URL=http://localhost:5173
+
+# Twitter/X OAuth 2.0 Credentials
 TWITTER_CLIENT_ID=your_twitter_client_id_here
 TWITTER_CLIENT_SECRET=your_twitter_client_secret_here
 TWITTER_CALLBACK_URL=http://localhost:3001/auth/twitter/callback
-SESSION_SECRET=your_random_secret_here
+
+# Session Secret
+SESSION_SECRET=your_random_session_secret_here
+
+# Gemini API (Required)
+GEMINI_API_KEY=your_gemini_api_key_here
+
+# Opik Configuration (Optional - for tracing and evaluation)
+OPIK_API_KEY=your_opik_api_key
+OPIK_WORKSPACE=default
 ```
+
+> **Note**: Opik integration is optional. The app will work without Opik credentials, but you won't get AI tracing and evaluation metrics.
 
 ---
 

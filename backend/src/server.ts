@@ -1,7 +1,7 @@
 import express from 'express';
 import cors from 'cors';
-import { config, validateConfig } from './config';
-import geminiRoutes from './routes/gemini';
+import { config, validateConfig } from './config/index.js';
+import geminiRoutes from './routes/gemini.js';
 
 const app = express();
 

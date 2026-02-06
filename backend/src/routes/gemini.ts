@@ -1,6 +1,6 @@
 import { Router, Request, Response } from 'express';
-import * as geminiService from '../services/gemini';
-import { opikClient } from '../config/opik';
+import * as geminiService from '../services/gemini.js';
+import { opikClient } from '../config/opik.js';
 
 const router = Router();
 

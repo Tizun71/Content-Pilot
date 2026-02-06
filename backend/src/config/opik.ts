@@ -2,7 +2,9 @@ import { Opik } from 'opik';
 
 export const opikClient = new Opik({
   apiKey: process.env.OPIK_API_KEY,
+  apiUrl: "https://www.comet.com/opik/api",
   projectName: 'content-pilot',
+  workspaceName: "tizun71",
 });
 
 export const EVALUATORS = {

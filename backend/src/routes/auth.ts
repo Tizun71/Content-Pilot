@@ -1,6 +1,6 @@
 import { Router, Request, Response } from 'express';
 import { TwitterApi } from 'twitter-api-v2';
-import { config } from '../config';
+import { config } from '../config/index.js';
 
 // Extend Express Session
 interface TwitterSession {

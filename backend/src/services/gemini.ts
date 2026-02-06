@@ -1,5 +1,5 @@
 import { GoogleGenAI, Type } from "@google/genai";
-import { opikClient } from '../config/opik';
+import { opikClient } from '../config/opik.js';
 
 const getAiClient = () => new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
 
