@@ -211,10 +211,13 @@ export const generatePost = async (
       has_image: !!imageBase64
     });
     
+    // Clean base64 string if image is provided
+    const cleanedImageBase64 = imageBase64 ? cleanBase64(imageBase64) : undefined;
+    
     const response = await ai.models.generateContent({
       model: "gemini-3-flash-preview",
-      contents: imageBase64 
-        ? [{ text: prompt }, { inlineData: { mimeType: 'image/png', data: imageBase64 } }]
+      contents: cleanedImageBase64 
+        ? [{ text: prompt }, { inlineData: { mimeType: 'image/png', data: cleanedImageBase64 } }]
         : prompt,
       config: {
         responseMimeType: "application/json",
@@ -579,11 +582,14 @@ async function evaluateImageTextAlignment(
   `;
 
   try {
+    // Clean base64 string before sending
+    const cleanedImageBase64 = cleanBase64(imageBase64);
+    
     const evalResponse = await ai.models.generateContent({
       model: "gemini-3-flash-preview",
       contents: [
         { text: evalPrompt },
-        { inlineData: { mimeType: 'image/png', data: imageBase64 } }
+        { inlineData: { mimeType: 'image/png', data: cleanedImageBase64 } }
       ],
       config: { responseMimeType: "application/json" }
     });
@@ -612,6 +618,15 @@ function extractSources(response: any): Array<{ title: string; uri: string }> {
     title: chunk.web?.title || '',
     uri: chunk.web?.uri || ''
   })).filter((s: any) => s.uri);
+}
+
+// Helper to clean base64 string (remove data URI prefix if present)
+function cleanBase64(base64String: string): string {
+  // Remove data URI prefix like "data:image/png;base64," or "data:image/jpeg;base64,"
+  if (base64String.includes(',')) {
+    return base64String.split(',')[1];
+  }
+  return base64String;
 }
 
 function buildContentPrompt(context: string, tone: string, platform: string, language: string, length: string): string {
