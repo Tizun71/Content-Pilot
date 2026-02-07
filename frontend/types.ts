@@ -27,6 +27,7 @@ export interface ModuleInstance {
     inputValue?: string;    // For INPUT (Text)
     selectedImage?: string; // For INPUT (Base64 Image)
     twitterAccessToken?: string; // For PUBLISHER (X Auth)
+    twitterUser?: { username: string; name?: string }; // For PUBLISHER (X User Info)
     tone?: string;          // For WRITE
     platform?: string;      // For WRITE ('Twitter')
     language?: string;      // For WRITE

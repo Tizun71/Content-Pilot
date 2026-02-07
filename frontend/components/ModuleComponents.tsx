@@ -311,13 +311,14 @@ export const WriteNode = memo(({ data, selected }: NodeProps<NodeData>) => {
   const result = data.output as GeneratedPost | undefined;
   
   const styles = [
-    "Storytelling",
-    "Educational / How-to",
-    "Listicle",
-    "Conversational / Casual",
-    "Data-driven",
-    "Problem-Solution",
-    "Trend / Newsjacking"
+    "Problem-Solution – identify pain points, offer your product as solution",
+    "Founder Story – authentic journey, why you built this, lessons learned",
+    "Customer Success – real results, testimonials, before/after stories",
+    "Educational / How-to – teach your audience, build authority and trust",
+    "Behind-the-Scenes – show your process, team culture, product development",
+    "Thought Leadership – share insights, trends, hot takes in your industry",
+    "Community-First – celebrate users, start conversations, ask questions",
+    "Product Updates – feature launches, improvements, roadmap teasers"
   ];
 
   const languages = [
@@ -332,9 +333,9 @@ export const WriteNode = memo(({ data, selected }: NodeProps<NodeData>) => {
   ];
 
   const lengths = [
-    "Short",
-    "Medium",
-    "Long"
+    "Short (1-2 sentences) – quick hook, single idea",
+    "Medium (3-5 sentences) – balanced story with context",
+    "Long (6+ sentences) – deep dive, multiple points"
   ];
 
   return (
@@ -365,13 +366,14 @@ export const WriteNode = memo(({ data, selected }: NodeProps<NodeData>) => {
           <div className="flex-1">
              <label className="block text-[9px] uppercase text-zinc-500 font-bold mb-1.5">Length</label>
              <select
-               value={data.config.length || 'Medium'}
+               value={data.config.length || 'Medium (3-5 sentences) – balanced story with context'}
                onChange={(e) => data.onUpdateConfig(data.id, { length: e.target.value })}
                className="w-full bg-zinc-50 border border-zinc-200 rounded-sm p-1.5 text-[10px] text-zinc-800 focus:outline-none focus:border-indigo-500 font-mono nodrag transition-all"
              >
-               {lengths.map(len => (
-                 <option key={len} value={len}>{len}</option>
-               ))}
+               {lengths.map(len => {
+                 const [label] = len.split('–');
+                 return <option key={len} value={len}>{label.trim()}</option>;
+               })}
              </select>
           </div>
         </div>
@@ -379,13 +381,14 @@ export const WriteNode = memo(({ data, selected }: NodeProps<NodeData>) => {
         <div>
           <label className="block text-[9px] uppercase text-zinc-500 font-bold mb-1.5">Tone & Voice</label>
           <select
-            value={data.config.tone || 'Conversational / Casual'}
+            value={data.config.tone || 'Problem-Solution'}
             onChange={(e) => data.onUpdateConfig(data.id, { tone: e.target.value })}
             className="w-full bg-zinc-50 border border-zinc-200 rounded-sm p-1.5 text-[10px] text-zinc-800 focus:outline-none focus:border-indigo-500 font-mono nodrag transition-all"
           >
-            {styles.map(style => (
-              <option key={style} value={style}>{style}</option>
-            ))}
+            {styles.map(style => {
+              const [label] = style.split('–');
+              return <option key={style} value={style}>{label.trim()}</option>;
+            })}
           </select>
         </div>
       </div>
@@ -646,14 +649,14 @@ export const ImageNode = memo(({ data, selected }: NodeProps<NodeData>) => {
   const images = data.output as string[] | undefined;
   
   const styles = [
-    "Documentary / Behind-the-scenes – candid, real work, natural light",
-    "UGC style – phone camera feel, imperfect, authentic",
-    "Minimal & Clean – neutral colors, lots of whitespace, human focus",
-    "Real people, real emotion – natural expression, no stock look",
-    "Process-focused – workflow, brainstorming, planning boards",
-    "Soft editorial – gentle light, subtle film tone, non-corporate",
-    "Data + human – people analyzing real data, simple visuals",
-    "Trust-first organic – realistic, unpolished, no ads vibe"
+    "Product in Action – real usage, hands-on demo, authentic context",
+    "Founder/Team Spotlight – authentic people, workspace, natural light",
+    "Customer Story – real users, genuine reactions, testimonial style",
+    "Behind-the-Scenes – process, development, team at work",
+    "Problem-Solution Visual – before/after, pain point vs solution",
+    "Minimal Product Focus – clean background, hero product shot",
+    "UGC Style – phone camera feel, imperfect, user-generated vibe",
+    "Data/Results Driven – charts, metrics, growth visualization"
   ];
 
   return (
@@ -664,13 +667,14 @@ export const ImageNode = memo(({ data, selected }: NodeProps<NodeData>) => {
              <Palette className="w-3 h-3" /> Creative Direction
            </label>
            <select
-            value={data.config.imageStyle || styles[2]} // Default to Minimal & Clean
+            value={data.config.imageStyle || 'Product in Action – real usage, hands-on demo, authentic context'}
             onChange={(e) => data.onUpdateConfig(data.id, { imageStyle: e.target.value })}
             className="w-full bg-zinc-50 border border-zinc-200 rounded-sm p-1.5 text-[10px] text-zinc-800 focus:outline-none focus:border-indigo-500 font-mono nodrag transition-all"
            >
-            {styles.map(s => (
-                <option key={s} value={s}>{s.split('–')[0].trim()}</option>
-            ))}
+            {styles.map(s => {
+              const [label] = s.split('–');
+              return <option key={s} value={s}>{label.trim()}</option>;
+            })}
            </select>
         </div>
 

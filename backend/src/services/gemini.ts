@@ -23,20 +23,53 @@ export const planWorkflow = async (intent: string): Promise<any> => {
     input: { intent },
     metadata: {
       module: 'ORCHESTRATOR',
-      model: 'gemini-3-pro-preview'
+      model: 'gemini-3-flash-preview'
     }
   });
 
   const prompt = `
-    You are an AI Workflow Orchestrator.
+    You are an AI Workflow Orchestrator for a STARTUP ORGANIC MARKETING tool.
+    This tool helps startups create authentic social media content to grow their audience organically.
+    
     User Intent: "${intent}"
     
-    Task:
-    1. Decide which modules to enable (SEARCH, WRITE, IMAGE, PREVIEW, PUBLISHER).
-    2. Configure the WRITE module parameters based on the intent.
-    3. Configure the IMAGE module parameters based on the intent.
+    Available Modules:
+    - SEARCH: Research trending topics, competitor content, and audience interests
+    - WRITE: Generate authentic social media content with startup-friendly tones
+    - IMAGE: Create compelling visuals (product shots, team photos, infographics)
+    - PREVIEW: Preview how the post will look on social media
+    - PUBLISHER: Auto-publish to connected social media accounts
     
-    Return JSON with the workflow plan.
+    Your Task:
+    1. Analyze the startup's intent and decide which modules to enable
+    2. Configure WRITE module for organic marketing:
+       - tone: Choose from:
+         * "Problem-Solution" - address pain points, offer solution
+         * "Founder Story" - authentic journey, why they built this
+         * "Customer Success" - real results and testimonials
+         * "Educational / How-to" - teach and build authority
+         * "Behind-the-Scenes" - show process and team culture
+         * "Thought Leadership" - share insights and hot takes
+         * "Community-First" - celebrate users, start conversations
+         * "Product Updates" - feature launches and improvements
+       - language: target language (e.g., "English", "Vietnamese")
+       - length: "Short (1-2 sentences)", "Medium (3-5 sentences)", or "Long (6+ sentences)"
+    
+    3. Configure IMAGE module for startup visuals:
+       - style: Choose from:
+         * "Product in Action" - real usage, demo style
+         * "Founder/Team Spotlight" - authentic people, workspace
+         * "Customer Story" - real users, testimonials
+         * "Behind-the-Scenes" - process, development
+         * "Problem-Solution Visual" - before/after comparison
+         * "Minimal Product Focus" - clean hero shot
+         * "UGC Style" - user-generated feel
+         * "Data/Results Driven" - metrics, growth charts
+       - count: number of image variations (1-4)
+    
+    Return JSON with:
+    - modules: array of module names to enable (e.g., ["SEARCH", "WRITE", "IMAGE", "PREVIEW"])
+    - config: { writer: { tone, language, length }, image: { style, count } }
   `;
 
   try {
@@ -45,10 +78,11 @@ export const planWorkflow = async (intent: string): Promise<any> => {
     console.log('[Opik] Plan Workflow - Prompt:', prompt.substring(0, 100) + '...');
     
     const response = await ai.models.generateContent({
-      model: "gemini-3-pro-preview",
+      model: "gemini-3-flash-preview",
       contents: prompt,
       config: {
-        responseMimeType: "application/json"
+        responseMimeType: "application/json",
+        responseSchema: workflowPlanSchema
       },
     });
 
@@ -81,10 +115,26 @@ export const scanTopic = async (topic: string): Promise<CrawlResult> => {
   const trace = opikClient.trace({
     name: 'scan_topic',
     input: { topic },
-    metadata: { module: 'SEARCH', model: 'gemini-3-pro-preview' }
+    metadata: { module: 'SEARCH', model: 'gemini-3-flash-preview' }
   });
 
-  const prompt = `Search for the latest viral discussions about: "${topic}"`;
+  const prompt = `Research for startup organic marketing campaign about: "${topic}"
+
+Return a CONCISE summary in bullet points (2-3 bullets per section):
+
+**Trending Topics:**
+- [Key trend 1]
+- [Key trend 2]
+
+**Audience Pain Points:**
+- [Pain point 1]
+- [Pain point 2]
+
+**Content Opportunities:**
+- [Opportunity 1]
+- [Opportunity 2]
+
+Keep it brief, actionable, and focused. Max 150 words total.`;
 
   try {
     const startTime = Date.now();
@@ -92,7 +142,7 @@ export const scanTopic = async (topic: string): Promise<CrawlResult> => {
     console.log('[Opik] Scan Topic - Query:', { topic, module: 'SEARCH' });
     
     const response = await ai.models.generateContent({
-      model: "gemini-3-pro-preview",
+      model: "gemini-3-flash-preview",
       contents: prompt,
       config: { tools: [{ googleSearch: {} }] }
     });
@@ -143,7 +193,7 @@ export const generatePost = async (
     input: { context, tone, platform, language, length, hasImage: !!imageBase64 },
     metadata: { 
       module: 'WRITE',
-      model: 'gemini-3-pro-preview'
+      model: 'gemini-3-flash-preview'
     }
   });
 
@@ -162,7 +212,7 @@ export const generatePost = async (
     });
     
     const response = await ai.models.generateContent({
-      model: "gemini-3-pro-preview",
+      model: "gemini-3-flash-preview",
       contents: imageBase64 
         ? [{ text: prompt }, { inlineData: { mimeType: 'image/png', data: imageBase64 } }]
         : prompt,
@@ -226,7 +276,19 @@ export const generateImage = async (
   try {
     const startTime = Date.now();
     
-    const fullPrompt = `${prompt}. Style: ${style || 'Minimal & Clean'}`;
+    // Enhanced prompt for startup organic marketing visuals
+    const styleGuidance = style || 'Product in Action';
+    const fullPrompt = `${prompt}
+
+Style: ${styleGuidance}
+
+Guidelines for startup organic marketing visuals:
+- Authentic and real, not stock photo aesthetic
+- Relatable and human-centric
+- Clear value proposition shown visually
+- Social media optimized (attention-grabbing)
+- Professional but approachable
+- Avoid corporate/stuffy vibes`;
     
     // Log image generation request
     console.log('[Opik] Image Generation - Request:', {
@@ -281,24 +343,25 @@ async function evaluateWorkflowQuality(
   const ai = getAiClient();
   
   const evalPrompt = `
-    You are evaluating the quality of a workflow plan for social media content creation.
+    You are evaluating a workflow plan for a STARTUP's ORGANIC MARKETING campaign.
+    The workflow should help create authentic content that grows audience organically.
     
     User Intent: "${intent}"
     Workflow Plan: ${JSON.stringify(workflowPlan)}
     
     Rate the workflow quality on these criteria (1-10 each):
-    1. Intent Understanding: Does the workflow understand the user's intent?
-    2. Module Selection: Are the right modules selected?
-    3. Configuration: Are module parameters properly configured?
-    4. Completeness: Does the workflow cover all necessary steps?
-    5. Efficiency: Is the workflow optimized and not redundant?
+    1. Intent Understanding: Does it correctly interpret what the startup wants to achieve?
+    2. Module Selection: Right mix of research, content creation, and distribution?
+    3. Strategy Fit: Are the tone and visual style appropriate for organic growth?
+    4. Audience Value: Will this workflow create content that audiences actually want?
+    5. Efficiency: Is the workflow streamlined without unnecessary steps?
     
-    Return JSON: { intent_understanding: number, module_selection: number, configuration: number, completeness: number, efficiency: number, overall: number, reasoning: string }
+    Return JSON: { intent_understanding: number, module_selection: number, strategy_fit: number, audience_value: number, efficiency: number, overall: number, reasoning: string }
   `;
   
   try {
     const evalResponse = await ai.models.generateContent({
-      model: "gemini-3-pro-preview",
+      model: "gemini-3-flash-preview",
       contents: evalPrompt,
       config: { responseMimeType: "application/json" }
     });
@@ -328,24 +391,26 @@ async function evaluateSearchQuality(
   });
 
   const evalPrompt = `
-    You are evaluating the quality of a search result for content creation.
+    You are evaluating search quality for a STARTUP's ORGANIC MARKETING research.
+    The search should provide actionable insights for creating authentic, valuable content.
     
     Original Topic: "${topic}"
     Search Summary: "${result.summary}"
     Sources Found: ${result.sources.length}
     
     Rate the search quality on these criteria (1-10 each):
-    1. Relevance: How relevant is the summary to the topic?
-    2. Freshness: Does it seem to include recent/trending information?
-    3. Depth: Is there enough context for content creation?
-    4. Actionability: Can a content creator use this effectively?
+    1. Relevance: How relevant is this for startup organic marketing?
+    2. Trend Awareness: Does it capture current trends and conversations?
+    3. Content Opportunities: Are there clear gaps or angles a startup can leverage?
+    4. Actionability: Can this directly inform authentic content creation?
+    5. Competitive Insight: Does it reveal what's working in the space?
     
-    Return JSON: { relevance: number, freshness: number, depth: number, actionability: number, overall: number, reasoning: string }
+    Return JSON: { relevance: number, trend_awareness: number, opportunities: number, actionability: number, competitive_insight: number, overall: number, reasoning: string }
   `;
 
   try {
     const evalResponse = await ai.models.generateContent({
-      model: "gemini-3-pro-preview",
+      model: "gemini-3-flash-preview",
       contents: evalPrompt,
       config: { responseMimeType: "application/json" }
     });
@@ -383,30 +448,33 @@ async function evaluateContentQuality(
   });
 
   const evalPrompt = `
-    You are a social media content quality evaluator.
+    You are evaluating social media content for a STARTUP's ORGANIC MARKETING campaign.
+    Content must feel authentic, provide value, and avoid being overly promotional.
     
     Original Context: "${context}"
     Generated Content: "${content.content}"
     Hashtags: ${JSON.stringify(content.hashtags)}
     Target Platform: ${config.platform}
-    Target Tone: ${config.tone}
+    Content Strategy: ${config.tone}
     Target Language: ${config.language}
     
     Evaluate on these dimensions (1-10 each):
     
-    1. **Engagement Potential**: Will this content drive likes, comments, shares?
-    2. **Clarity**: Is the message clear and easy to understand?
-    3. **Tone Consistency**: Does it match the requested tone (${config.tone})?
-    4. **Platform Fit**: Is it optimized for ${config.platform}? (character limits, style)
-    5. **Hashtag Quality**: Are hashtags relevant and effective?
-    6. **CTA Effectiveness**: Does it encourage action from readers?
-    7. **Originality**: Is the content unique and not generic?
+    1. **Organic Reach Potential**: Will this get shared/engaged naturally without ads?
+    2. **Authenticity**: Does it sound human and genuine, not corporate/salesy?
+    3. **Value to Audience**: Does it provide real value (education, entertainment, inspiration)?
+    4. **Strategy Alignment**: Does it match the requested strategy (${config.tone})?
+    5. **Platform Optimization**: Is it optimized for ${config.platform} organic algorithm?
+    6. **Conversation Starter**: Does it encourage meaningful engagement and discussion?
+    7. **Brand Building**: Does it build trust and connection vs just pushing product?
     
-    Also check for RED FLAGS:
-    - Contains misinformation
-    - Potentially offensive content
-    - Spam-like patterns
+    Also check for RED FLAGS for organic marketing:
+    - Too promotional/salesy (reduces organic reach)
+    - Generic/boring (won't get engagement)
+    - Clickbait without value
+    - Misinformation or misleading claims
     - Grammar/spelling errors
+    - Overuse of hashtags (looks spammy)
     
     Return JSON:
     {
@@ -426,7 +494,7 @@ async function evaluateContentQuality(
 
   try {
     const evalResponse = await ai.models.generateContent({
-      model: "gemini-3-pro-preview",
+      model: "gemini-3-flash-preview",
       contents: evalPrompt,
       config: { responseMimeType: "application/json" }
     });
@@ -512,7 +580,7 @@ async function evaluateImageTextAlignment(
 
   try {
     const evalResponse = await ai.models.generateContent({
-      model: "gemini-3-pro-preview",
+      model: "gemini-3-flash-preview",
       contents: [
         { text: evalPrompt },
         { inlineData: { mimeType: 'image/png', data: imageBase64 } }
@@ -548,23 +616,71 @@ function extractSources(response: any): Array<{ title: string; uri: string }> {
 
 function buildContentPrompt(context: string, tone: string, platform: string, language: string, length: string): string {
   const toneMap: Record<string, string> = {
-    "Storytelling": "Focus on storytelling: narrate a brand story or customer experience.",
-    "Educational / How-to": "Educational content: provide guides, share knowledge.",
-    "Conversational / Casual": "Conversational tone: friendly, like a chat.",
-    "Professional / Formal": "Professional and formal tone.",
-    "Humorous / Entertaining": "Funny and entertaining content.",
-    "Inspirational / Motivational": "Inspirational and motivating messages."
+    "Problem-Solution": "Identify a specific pain point your audience faces, then present your product/service as the solution. Be empathetic and results-focused.",
+    "Founder Story": "Share authentic founder journey, challenges overcome, why you built this, and lessons learned. Be vulnerable and human.",
+    "Customer Success": "Highlight real customer results, testimonials, transformation stories. Use specific metrics and genuine quotes when possible.",
+    "Educational / How-to": "Teach your audience something valuable related to your industry. Build authority and trust through helpful content.",
+    "Behind-the-Scenes": "Show the real work, team culture, product development process. Give exclusive peek into how things are made.",
+    "Thought Leadership": "Share unique insights, industry trends, or hot takes. Position as an expert with a distinct point of view.",
+    "Community-First": "Celebrate your users, ask questions, start meaningful conversations. Make it about them, not you.",
+    "Product Updates": "Announce new features, improvements, or roadmap teasers. Focus on benefits and value to users."
   };
 
   return `
-    Create a ${platform} post in ${language}.
-    Context: ${context}
-    Tone: ${toneMap[tone] || tone}
-    Length: ${length}
+    You are creating organic social media content for a STARTUP trying to grow through authentic marketing.
     
-    Return JSON with: content (the post text), hashtags (array of relevant hashtags), imagePrompt (description for image generation)
+    Context: ${context}
+    Platform: ${platform} 
+    Language: ${language}
+    Content Strategy: ${toneMap[tone] || tone}
+    Target Length: ${length}
+    
+    Guidelines for startup organic marketing:
+    - Be authentic and human, not corporate or salesy
+    - Focus on value to the audience, not just promoting
+    - Use conversational language that builds connection
+    - Include specific details, examples, or data when relevant
+    - Make it shareable and engaging
+    - Avoid marketing buzzwords and corporate jargon
+    
+    Return JSON with: 
+    - content: the ${platform} post text (optimized for organic reach)
+    - hashtags: 3-5 relevant, non-generic hashtags
+    - imagePrompt: detailed description for generating a compelling visual that supports the message
   `;
 }
+
+const workflowPlanSchema = {
+  type: Type.OBJECT,
+  properties: {
+    modules: {
+      type: Type.ARRAY,
+      items: { type: Type.STRING },
+      description: "Array of module names to enable (SEARCH, WRITE, IMAGE, PREVIEW, PUBLISHER)"
+    },
+    config: {
+      type: Type.OBJECT,
+      properties: {
+        writer: {
+          type: Type.OBJECT,
+          properties: {
+            tone: { type: Type.STRING },
+            language: { type: Type.STRING },
+            length: { type: Type.STRING }
+          }
+        },
+        image: {
+          type: Type.OBJECT,
+          properties: {
+            style: { type: Type.STRING },
+            count: { type: Type.NUMBER }
+          }
+        }
+      }
+    }
+  },
+  required: ["modules", "config"]
+};
 
 const postSchema = {
   type: Type.OBJECT,

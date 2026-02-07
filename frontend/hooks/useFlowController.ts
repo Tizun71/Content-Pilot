@@ -30,7 +30,7 @@ const initialNodes: Node[] = [
   { 
     id: 'write', type: 'WRITE', position: { x: X_GAP * 2, y: Y_POS }, 
     hidden: true,
-    data: { id: 'write', moduleType: 'WRITE', status: 'IDLE', config: { tone: 'Conversational / Casual', language: 'English', enabled: false } } 
+    data: { id: 'write', moduleType: 'WRITE', status: 'IDLE', config: { tone: 'Problem-Solution – identify pain points, offer your product as solution', language: 'English', enabled: false } } 
   },
   { 
     id: 'image', type: 'IMAGE', position: { x: X_GAP * 3, y: Y_POS }, 
