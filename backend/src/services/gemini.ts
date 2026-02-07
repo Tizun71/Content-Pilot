@@ -23,7 +23,7 @@ export const planWorkflow = async (intent: string): Promise<any> => {
     input: { intent },
     metadata: {
       module: 'ORCHESTRATOR',
-      model: 'gemini-2.5-flash'
+      model: 'gemini-3-pro-preview'
     }
   });
 
@@ -45,7 +45,7 @@ export const planWorkflow = async (intent: string): Promise<any> => {
     console.log('[Opik] Plan Workflow - Prompt:', prompt.substring(0, 100) + '...');
     
     const response = await ai.models.generateContent({
-      model: "gemini-2.5-flash",
+      model: "gemini-3-pro-preview",
       contents: prompt,
       config: {
         responseMimeType: "application/json"
@@ -81,7 +81,7 @@ export const scanTopic = async (topic: string): Promise<CrawlResult> => {
   const trace = opikClient.trace({
     name: 'scan_topic',
     input: { topic },
-    metadata: { module: 'SEARCH', model: 'gemini-2.5-flash' }
+    metadata: { module: 'SEARCH', model: 'gemini-3-pro-preview' }
   });
 
   const prompt = `Search for the latest viral discussions about: "${topic}"`;
@@ -92,7 +92,7 @@ export const scanTopic = async (topic: string): Promise<CrawlResult> => {
     console.log('[Opik] Scan Topic - Query:', { topic, module: 'SEARCH' });
     
     const response = await ai.models.generateContent({
-      model: "gemini-2.5-flash",
+      model: "gemini-3-pro-preview",
       contents: prompt,
       config: { tools: [{ googleSearch: {} }] }
     });
@@ -143,7 +143,7 @@ export const generatePost = async (
     input: { context, tone, platform, language, length, hasImage: !!imageBase64 },
     metadata: { 
       module: 'WRITE',
-      model: 'gemini-2.5-flash'
+      model: 'gemini-3-pro-preview'
     }
   });
 
@@ -162,7 +162,7 @@ export const generatePost = async (
     });
     
     const response = await ai.models.generateContent({
-      model: "gemini-2.5-flash",
+      model: "gemini-3-pro-preview",
       contents: imageBase64 
         ? [{ text: prompt }, { inlineData: { mimeType: 'image/png', data: imageBase64 } }]
         : prompt,
@@ -298,7 +298,7 @@ async function evaluateWorkflowQuality(
   
   try {
     const evalResponse = await ai.models.generateContent({
-      model: "gemini-2.5-flash",
+      model: "gemini-3-pro-preview",
       contents: evalPrompt,
       config: { responseMimeType: "application/json" }
     });
@@ -345,7 +345,7 @@ async function evaluateSearchQuality(
 
   try {
     const evalResponse = await ai.models.generateContent({
-      model: "gemini-2.5-flash",
+      model: "gemini-3-pro-preview",
       contents: evalPrompt,
       config: { responseMimeType: "application/json" }
     });
@@ -426,7 +426,7 @@ async function evaluateContentQuality(
 
   try {
     const evalResponse = await ai.models.generateContent({
-      model: "gemini-2.5-flash",
+      model: "gemini-3-pro-preview",
       contents: evalPrompt,
       config: { responseMimeType: "application/json" }
     });
@@ -512,7 +512,7 @@ async function evaluateImageTextAlignment(
 
   try {
     const evalResponse = await ai.models.generateContent({
-      model: "gemini-2.5-flash",
+      model: "gemini-2.5-flash-image",
       contents: [
         { text: evalPrompt },
         { inlineData: { mimeType: 'image/png', data: imageBase64 } }
