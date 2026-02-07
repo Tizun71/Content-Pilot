@@ -30,12 +30,12 @@ const initialNodes: Node[] = [
   { 
     id: 'write', type: 'WRITE', position: { x: X_GAP * 2, y: Y_POS }, 
     hidden: true,
-    data: { id: 'write', moduleType: 'WRITE', status: 'IDLE', config: { tone: 'Conversational / Casual', language: 'Vietnamese', enabled: false } } 
+    data: { id: 'write', moduleType: 'WRITE', status: 'IDLE', config: { tone: 'Conversational / Casual', language: 'English', enabled: false } } 
   },
   { 
     id: 'image', type: 'IMAGE', position: { x: X_GAP * 3, y: Y_POS }, 
     hidden: true,
-    data: { id: 'image', moduleType: 'IMAGE', status: 'IDLE', config: { imageCount: 3, enabled: false } } 
+    data: { id: 'image', moduleType: 'IMAGE', status: 'IDLE', config: { imageCount: 1, enabled: false } } 
   },
   { 
     id: 'preview', type: 'PREVIEW', position: { x: X_GAP * 4, y: Y_POS }, 
