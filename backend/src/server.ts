@@ -11,9 +11,26 @@ const app = express();
 // Validate config on startup
 validateConfig();
 
+// CORS Configuration - Allow multiple origins
+const allowedOrigins = [
+  'http://localhost:5173',
+  'http://localhost:3000',
+  'https://content-pilot-835730398732.asia-east2.run.app',
+  config.frontendUrl
+].filter((origin, index, self) => origin && self.indexOf(origin) === index); // Remove duplicates
+
 // Middleware
 app.use(cors({
-  origin: config.frontendUrl,
+  origin: (origin, callback) => {
+    // Allow requests with no origin (like mobile apps or curl requests)
+    if (!origin) return callback(null, true);
+    
+    if (allowedOrigins.includes(origin)) {
+      callback(null, true);
+    } else {
+      callback(new Error('Not allowed by CORS'));
+    }
+  },
   credentials: true
 }));
 app.use(express.json({ limit: '50mb' }));
@@ -61,7 +78,7 @@ const startServer = () => {
   const server = app.listen(PORT, '0.0.0.0', () => {
     console.log(`✅ Server running on port ${PORT}`);
     console.log(`Environment: ${config.nodeEnv}`);
-    console.log(`CORS enabled for: ${config.frontendUrl}`);
+    console.log(`CORS enabled for: ${allowedOrigins.join(', ')}`);
   });
 
   // Graceful shutdown
