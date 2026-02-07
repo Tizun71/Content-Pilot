@@ -220,7 +220,7 @@ export const generateImage = async (
   const trace = opikClient.trace({
     name: 'generate_image',
     input: { prompt, hasReference: !!referenceImage, count, style },
-    metadata: { module: 'IMAGE', model: 'gemini-2.5-flash-image' }
+    metadata: { module: 'IMAGE', model: 'imagen-4.0-generate-001' }
   });
 
   try {
@@ -237,7 +237,7 @@ export const generateImage = async (
     });
     
     const response = await ai.models.generateImages({
-      model: 'gemini-2.5-flash-image',
+      model: 'imagen-4.0-generate-001',
       prompt: fullPrompt,
       config: { numberOfImages: count }
     });
