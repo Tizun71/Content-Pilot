@@ -220,7 +220,7 @@ export const generateImage = async (
   const trace = opikClient.trace({
     name: 'generate_image',
     input: { prompt, hasReference: !!referenceImage, count, style },
-    metadata: { module: 'IMAGE', model: 'imagen-3.0-generate-002' }
+    metadata: { module: 'IMAGE', model: 'gemini-2.5-flash-image' }
   });
 
   try {
@@ -237,7 +237,7 @@ export const generateImage = async (
     });
     
     const response = await ai.models.generateImages({
-      model: 'imagen-3.0-generate-002',
+      model: 'gemini-2.5-flash-image',
       prompt: fullPrompt,
       config: { numberOfImages: count }
     });
@@ -512,7 +512,7 @@ async function evaluateImageTextAlignment(
 
   try {
     const evalResponse = await ai.models.generateContent({
-      model: "gemini-2.5-flash-image",
+      model: "gemini-3-pro-preview",
       contents: [
         { text: evalPrompt },
         { inlineData: { mimeType: 'image/png', data: imageBase64 } }
