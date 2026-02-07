@@ -361,7 +361,7 @@ export const useFlowController = ({ onNotify }: UseFlowControllerProps) => {
            else if (type === 'IMAGE') {
              const prompt = context.generatedPost?.imagePrompt || context.topic;
              if (!prompt) throw new Error("Missing prompt");
-             const count = config.imageCount || 3;
+             const count = config.imageCount || 1;
              const res = await generateImage(prompt, context.inputImage, count, config.imageStyle);
              context.generatedImages = res;
              updateNodeStatus(currentNode.id, 'COMPLETED', res);
