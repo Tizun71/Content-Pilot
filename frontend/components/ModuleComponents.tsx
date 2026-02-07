@@ -353,7 +353,7 @@ export const WriteNode = memo(({ data, selected }: NodeProps<NodeData>) => {
           <div className="flex-1">
             <label className="block text-[9px] uppercase text-zinc-500 font-bold mb-1.5">Language</label>
             <select
-              value={data.config.language || 'Vietnamese'}
+              value={data.config.language || 'English'}
               onChange={(e) => data.onUpdateConfig(data.id, { language: e.target.value })}
               className="w-full bg-zinc-50 border border-zinc-200 rounded-sm p-1.5 text-[10px] text-zinc-800 focus:outline-none focus:border-indigo-500 font-mono nodrag transition-all"
             >
