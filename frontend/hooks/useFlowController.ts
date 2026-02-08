@@ -388,7 +388,7 @@ export const useFlowController = ({ onNotify }: UseFlowControllerProps) => {
         
         if (currentVisibleIdx >= 0 && currentVisibleIdx < visibleNodes.length - 1) {
             const nextNode = visibleNodes[currentVisibleIdx + 1];
-            await new Promise(r => setTimeout(r, 3000));
+            await new Promise(r => setTimeout(r, 20000)); // 20 seconds delay between steps
             currentNode = nextNode;
         } else {
             currentNode = undefined;
