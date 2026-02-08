@@ -1,7 +1,7 @@
 <div align="center">
   <img src= "https://raw.githubusercontent.com/Tizun71/Content-Pilot/refs/heads/main/images/logo-content-pilot.png" alt="Content Pilot Logo" width="120" height="120" />
   <h1>Content Pilot</h1>
-  <p><strong>AI-Powered Social Media Automation</strong></p>
+  <p><strong>The AI mate for organic content growth</strong></p>
   
   ![React](https://img.shields.io/badge/React-19.0.0-61DAFB?logo=react&logoColor=white)
   ![TypeScript](https://img.shields.io/badge/TypeScript-5.8.2-3178C6?logo=typescript&logoColor=white)
