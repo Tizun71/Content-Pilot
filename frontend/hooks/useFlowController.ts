@@ -299,6 +299,83 @@ export const useFlowController = ({ onNotify }: UseFlowControllerProps) => {
 
   // -- Execution Engine --
 
+  const executeModuleWithRetry = async (
+    currentNode: Node, 
+    context: FlowContext, 
+    maxRetries: number = 1
+  ): Promise<{ context: FlowContext; output: any }> => {
+    const type = currentNode.type as ModuleType;
+    const config = currentNode.data.config;
+    let lastError: Error | null = null;
+
+    for (let attempt = 0; attempt <= maxRetries; attempt++) {
+      try {
+        if (config.enabled === false) throw new Error("Reached disabled node unexpectedly");
+
+        if (type === 'INPUT') {
+          // Relax input check if we have image
+          if (!config.inputValue && !config.selectedImage) throw new Error("Input empty");
+          
+          context.topic = config.inputValue;
+          
+          // Capture Twitter Access Token if present
+          if (config.twitterAccessToken) {
+              context.twitterAccessToken = config.twitterAccessToken;
+          }
+
+          if (config.selectedImage) context.inputImage = config.selectedImage;
+          return { context, output: undefined };
+        }
+        else if (type === 'SEARCH') {
+          if (!context.topic) throw new Error("Missing topic");
+          const res = await scanTopic(context.topic);
+          context.crawlResult = res;
+          return { context, output: res };
+        }
+        else if (type === 'WRITE') {
+          const input = context.crawlResult?.summary || context.topic || "Generate content based on image";
+          const res = await generatePost(
+              input, 
+              config.tone || 'Conversational / Casual', 
+              config.platform || 'Twitter',
+              config.language || 'Vietnamese',
+              config.length || 'Medium',
+              context.inputImage
+          );
+          context.generatedPost = res;
+          return { context, output: res };
+        }
+        else if (type === 'IMAGE') {
+          const prompt = context.generatedPost?.imagePrompt || context.topic;
+          if (!prompt) throw new Error("Missing prompt");
+          const count = config.imageCount || 1;
+          const res = await generateImage(prompt, context.inputImage, count, config.imageStyle);
+          context.generatedImages = res;
+          return { context, output: res };
+        }
+        else if (type === 'PREVIEW' || type === 'PUBLISHER' || type === 'OUTPUT') {
+           if (type === 'PUBLISHER' && !context.generatedPost) throw new Error("No post content.");
+           return { context, output: context };
+        }
+
+        return { context, output: undefined };
+
+      } catch (e: any) {
+        lastError = e;
+        
+        if (attempt < maxRetries) {
+          // Retry attempt
+          onNotify('warning', `${type} module failed. Retrying (${attempt + 1}/${maxRetries})...`);
+          updateNodeStatus(currentNode.id, 'RUNNING');
+          await new Promise(r => setTimeout(r, 2000)); // Wait 2s before retry
+        }
+      }
+    }
+
+    // All retries exhausted
+    throw lastError;
+  };
+
   const runFlow = async () => {
     if (isRunning) return;
     setIsRunning(true);
@@ -320,56 +397,10 @@ export const useFlowController = ({ onNotify }: UseFlowControllerProps) => {
         fitView({ nodes: [{ id: currentNode.id }], duration: 800, padding: 0.3 });
 
         try {
-           const type = currentNode.type as ModuleType;
-           const config = currentNode.data.config;
-
-           if (config.enabled === false) throw new Error("Reached disabled node unexpectedly");
-
-           if (type === 'INPUT') {
-             // Relax input check if we have image
-             if (!config.inputValue && !config.selectedImage) throw new Error("Input empty");
-             
-             context.topic = config.inputValue;
-             
-             // Capture Twitter Access Token if present
-             if (config.twitterAccessToken) {
-                 context.twitterAccessToken = config.twitterAccessToken;
-             }
-
-             if (config.selectedImage) context.inputImage = config.selectedImage;
-             updateNodeStatus(currentNode.id, 'COMPLETED');
-           }
-           else if (type === 'SEARCH') {
-             if (!context.topic) throw new Error("Missing topic");
-             const res = await scanTopic(context.topic);
-             context.crawlResult = res;
-             updateNodeStatus(currentNode.id, 'COMPLETED', res);
-           }
-           else if (type === 'WRITE') {
-             const input = context.crawlResult?.summary || context.topic || "Generate content based on image";
-             const res = await generatePost(
-                 input, 
-                 config.tone || 'Conversational / Casual', 
-                 config.platform || 'Twitter',
-                 config.language || 'Vietnamese',
-                 config.length || 'Medium',
-                 context.inputImage
-             );
-             context.generatedPost = res;
-             updateNodeStatus(currentNode.id, 'COMPLETED', res);
-           }
-           else if (type === 'IMAGE') {
-             const prompt = context.generatedPost?.imagePrompt || context.topic;
-             if (!prompt) throw new Error("Missing prompt");
-             const count = config.imageCount || 1;
-             const res = await generateImage(prompt, context.inputImage, count, config.imageStyle);
-             context.generatedImages = res;
-             updateNodeStatus(currentNode.id, 'COMPLETED', res);
-           }
-           else if (type === 'PREVIEW' || type === 'PUBLISHER' || type === 'OUTPUT') {
-              if (type === 'PUBLISHER' && !context.generatedPost) throw new Error("No post content.");
-              updateNodeStatus(currentNode.id, 'COMPLETED', context);
-           }
+           // Execute module with retry logic
+           const result = await executeModuleWithRetry(currentNode, context, 1);
+           context = result.context;
+           updateNodeStatus(currentNode.id, 'COMPLETED', result.output);
 
         } catch (e: any) {
            updateNodeStatus(currentNode.id, 'ERROR', undefined, e.message);
