@@ -1,5 +1,6 @@
 import { Router, Request, Response } from 'express';
 import { TwitterApi } from 'twitter-api-v2';
+import jwt, { SignOptions } from 'jsonwebtoken';
 import { config } from '../config/index.js';
 
 // Extend Express Session
@@ -109,15 +110,21 @@ router.get('/twitter/callback', async (req: Request, res: Response) => {
     // Clean up used state
     oauthStates.delete(state as string);
 
-    // Store tokens in session
-    (req.session as TwitterSession).twitter = {
-      accessToken,
-      refreshToken,
-      expiresIn,
-      user: userObject
-    };
+    // Generate JWT token instead of session
+    const jwtToken = jwt.sign(
+      {
+        twitter: {
+          accessToken,
+          refreshToken,
+          expiresIn,
+          user: userObject
+        }
+      },
+      config.jwt.secret as string,
+      { expiresIn: '7d' }
+    );
 
-    // Send success HTML that closes popup
+    // Send success HTML that closes popup with token
     const successHtml = `
 <!DOCTYPE html>
 <html>
@@ -152,7 +159,14 @@ router.get('/twitter/callback', async (req: Request, res: Response) => {
         <p>This window will close automatically...</p>
     </div>
     <script>
-        // Close window after 2 seconds
+        // Send token to parent window and close
+        if (window.opener) {
+            window.opener.postMessage({ 
+                type: 'TWITTER_AUTH_SUCCESS',
+                token: '${jwtToken}',
+                user: ${JSON.stringify(userObject)}
+            }, '*');
+        }
         setTimeout(() => {
             window.close();
         }, 2000);
@@ -210,19 +224,39 @@ router.get('/twitter/callback', async (req: Request, res: Response) => {
 });
 
 /**
+ * Middleware to verify JWT token
+ */
+const authenticateJWT = (req: Request, res: Response, next: any) => {
+  const authHeader = req.headers.authorization;
+  const token = authHeader && authHeader.split(' ')[1]; // Bearer TOKEN
+
+  if (!token) {
+    return res.status(401).json({ error: 'No token provided' });
+  }
+
+  try {
+    const decoded = jwt.verify(token, config.jwt.secret) as any;
+    (req as any).user = decoded;
+    next();
+  } catch (error) {
+    return res.status(401).json({ error: 'Invalid or expired token' });
+  }
+};
+
+/**
  * Get current user info
  */
-router.get('/twitter/user', async (req: Request, res: Response) => {
+router.get('/twitter/user', authenticateJWT, async (req: Request, res: Response) => {
   try {
-    const twitterData = (req.session as TwitterSession).twitter;
+    const userData = (req as any).user;
     
-    if (!twitterData || !twitterData.accessToken) {
+    if (!userData || !userData.twitter) {
       return res.status(401).json({ error: 'Not authenticated' });
     }
 
     res.json({
       authenticated: true,
-      user: twitterData.user
+      user: userData.twitter.user
     });
   } catch (error: any) {
     console.error('Error getting user info:', error);
@@ -231,19 +265,19 @@ router.get('/twitter/user', async (req: Request, res: Response) => {
 });
 
 /**
- * Logout endpoint
+ * Logout endpoint (JWT doesn't need server-side logout, just delete token on client)
  */
 router.post('/twitter/logout', (req: Request, res: Response) => {
-  (req.session as TwitterSession).twitter = undefined;
-  res.json({ success: true, message: 'Logged out successfully' });
+  res.json({ success: true, message: 'Logged out successfully. Clear token on client side.' });
 });
 
 /**
  * Refresh access token
  */
-router.post('/twitter/refresh', async (req: Request, res: Response) => {
+router.post('/twitter/refresh', authenticateJWT, async (req: Request, res: Response) => {
   try {
-    const twitterData = (req.session as TwitterSession).twitter;
+    const userData = (req as any).user;
+    const twitterData = userData?.twitter;
     
     if (!twitterData || !twitterData.refreshToken) {
       return res.status(401).json({ error: 'No refresh token available' });
@@ -261,15 +295,25 @@ router.post('/twitter/refresh', async (req: Request, res: Response) => {
       expiresIn
     } = await client.refreshOAuth2Token(twitterData.refreshToken);
 
-    // Update session with new tokens
-    (req.session as TwitterSession).twitter = {
-      ...twitterData,
-      accessToken,
-      refreshToken: refreshToken || twitterData.refreshToken,
-      expiresIn
-    };
+    // Generate new JWT with refreshed tokens
+    const newJwtToken = jwt.sign(
+      {
+        twitter: {
+          ...twitterData,
+          accessToken,
+          refreshToken: refreshToken || twitterData.refreshToken,
+          expiresIn
+        }
+      },
+      config.jwt.secret as string,
+      { expiresIn: '7d' }
+    );
 
-    res.json({ success: true, message: 'Token refreshed successfully' });
+    res.json({ 
+      success: true, 
+      message: 'Token refreshed successfully',
+      token: newJwtToken
+    });
   } catch (error: any) {
     console.error('Error refreshing token:', error);
     res.status(500).json({

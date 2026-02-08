@@ -22,6 +22,11 @@ export const config = {
   
   session: {
     secret: process.env.SESSION_SECRET || 'your-random-session-secret',
+  },
+  
+  jwt: {
+    secret: process.env.JWT_SECRET || 'your-jwt-secret-change-in-production',
+    expiresIn: process.env.JWT_EXPIRES_IN || '7d'
   }
 };
 
@@ -29,7 +34,7 @@ export const validateConfig = () => {
   const requiredVars = [
     'TWITTER_CLIENT_ID',
     'TWITTER_CLIENT_SECRET',
-    'SESSION_SECRET'
+    'JWT_SECRET'
   ];
   
   const missing = requiredVars.filter(varName => !process.env[varName]);

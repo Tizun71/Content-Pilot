@@ -1,13 +1,21 @@
 // Twitter OAuth via Backend Server
-const BACKEND_URL = process.env.BACKEND_URL || 'http://localhost:3001';
+const BACKEND_URL = process.env.VITE_BACKEND_URL || 'https://content-pilot-backend.vercel.app';
+
+// Helper function to get auth headers with JWT
+const getAuthHeaders = () => {
+  const token = localStorage.getItem('twitter_token');
+  return {
+    'Content-Type': 'application/json',
+    ...(token && { Authorization: `Bearer ${token}` })
+  };
+};
+
 // --- Auth Flow via Backend ---
 
 export const loginWithTwitter = async (): Promise<{ authenticated: boolean; user: any }> => {
   try {
     // 1. Get auth URL from backend
-    const response = await fetch(`${BACKEND_URL}/auth/twitter/login`, {
-      credentials: 'include' // Important for cookies/session
-    });
+    const response = await fetch(`${BACKEND_URL}/auth/twitter/login`);
 
     if (!response.ok) {
       throw new Error('Failed to initiate OAuth');
@@ -33,25 +41,36 @@ export const loginWithTwitter = async (): Promise<{ authenticated: boolean; user
         return;
       }
 
-      // 3. Poll for popup completion
-      const pollTimer = setInterval(async () => {
-        if (popup.closed) {
+      // 3. Listen for message from popup with JWT token
+      const messageHandler = (event: MessageEvent) => {
+        // Verify origin if needed
+        if (event.data.type === 'TWITTER_AUTH_SUCCESS') {
+          window.removeEventListener('message', messageHandler);
           clearInterval(pollTimer);
           
-          // Check if auth was successful
-          try {
-            const userResponse = await fetch(`${BACKEND_URL}/auth/twitter/user`, {
-              credentials: 'include'
-            });
-            
-            if (userResponse.ok) {
-              const userData = await userResponse.json();
-              resolve(userData);
-            } else {
-              reject(new Error('Authentication was not completed'));
-            }
-          } catch (error) {
-            reject(new Error('Failed to verify authentication'));
+          // Store JWT token in localStorage
+          localStorage.setItem('twitter_token', event.data.token);
+          localStorage.setItem('twitter_user', JSON.stringify(event.data.user));
+          
+          resolve({
+            authenticated: true,
+            user: event.data.user
+          });
+        }
+      };
+      
+      window.addEventListener('message', messageHandler);
+
+      // 4. Check if popup closed without success
+      const pollTimer = setInterval(() => {
+        if (popup.closed) {
+          clearInterval(pollTimer);
+          window.removeEventListener('message', messageHandler);
+          
+          // Check if we got token
+          const token = localStorage.getItem('twitter_token');
+          if (!token) {
+            reject(new Error('Authentication cancelled'));
           }
         }
       }, 500);
@@ -59,6 +78,7 @@ export const loginWithTwitter = async (): Promise<{ authenticated: boolean; user
       // Timeout after 5 minutes
       setTimeout(() => {
         clearInterval(pollTimer);
+        window.removeEventListener('message', messageHandler);
         if (!popup.closed) {
           popup.close();
         }
@@ -66,7 +86,7 @@ export const loginWithTwitter = async (): Promise<{ authenticated: boolean; user
       }, 5 * 60 * 1000);
     });
   } catch (error: any) {
-    console.error('Login error:', error);
+    console.error('Login with Twitter error:', error);
     throw error;
   }
 };
@@ -74,14 +94,23 @@ export const loginWithTwitter = async (): Promise<{ authenticated: boolean; user
 // Check if user is currently authenticated
 export const checkAuthStatus = async (): Promise<{ authenticated: boolean; user?: any }> => {
   try {
+    const token = localStorage.getItem('twitter_token');
+    
+    if (!token) {
+      return { authenticated: false };
+    }
+
     const response = await fetch(`${BACKEND_URL}/auth/twitter/user`, {
-      credentials: 'include'
+      headers: getAuthHeaders()
     });
     
     if (response.ok) {
       return await response.json();
     }
     
+    // Token expired or invalid, clear it
+    localStorage.removeItem('twitter_token');
+    localStorage.removeItem('twitter_user');
     return { authenticated: false };
   } catch (error) {
     console.error('Auth check error:', error);
@@ -92,9 +121,14 @@ export const checkAuthStatus = async (): Promise<{ authenticated: boolean; user?
 // Logout
 export const logout = async (): Promise<void> => {
   try {
+    // Clear local storage
+    localStorage.removeItem('twitter_token');
+    localStorage.removeItem('twitter_user');
+    
+    // Call backend logout (optional since JWT is stateless)
     await fetch(`${BACKEND_URL}/auth/twitter/logout`, {
       method: 'POST',
-      credentials: 'include'
+      headers: getAuthHeaders()
     });
   } catch (error) {
     console.error('Logout error:', error);
@@ -107,10 +141,7 @@ export const postTweet = async (content: string, imageBase64?: string): Promise<
   try {
     const response = await fetch(`${BACKEND_URL}/api/twitter/tweet`, {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json'
-      },
-      credentials: 'include',
+      headers: getAuthHeaders(),
       body: JSON.stringify({ text: content })
     });
 
@@ -136,7 +167,7 @@ export const postTweet = async (content: string, imageBase64?: string): Promise<
 export const getUserTimeline = async (): Promise<any[]> => {
   try {
     const response = await fetch(`${BACKEND_URL}/api/twitter/timeline`, {
-      credentials: 'include'
+      headers: getAuthHeaders()
     });
 
     if (!response.ok) {
@@ -160,7 +191,7 @@ export const searchTweets = async (query: string, maxResults: number = 10): Prom
     });
 
     const response = await fetch(`${BACKEND_URL}/api/twitter/search?${params}`, {
-      credentials: 'include'
+      headers: getAuthHeaders()
     });
 
     if (!response.ok) {
