@@ -1,5 +1,5 @@
 // Twitter OAuth via Backend Server
-const BACKEND_URL = process.env.VITE_BACKEND_URL || 'https://content-pilot-backend.vercel.app';
+const BACKEND_URL = import.meta.env.VITE_BACKEND_URL || 'http://localhost:3001';
 
 // Helper function to get auth headers with JWT
 const getAuthHeaders = () => {
@@ -146,8 +146,12 @@ export const postTweet = async (content: string, imageBase64?: string): Promise<
     });
 
     if (!response.ok) {
-      const error = await response.json();
-      throw new Error(error.message || 'Failed to post tweet');
+      const contentType = response.headers.get('content-type');
+      if (contentType && contentType.includes('application/json')) {
+        const error = await response.json();
+        throw new Error(error.message || 'Failed to post tweet');
+      }
+      throw new Error(`Server error! status: ${response.status}`);
     }
 
     const data = await response.json();
@@ -159,7 +163,7 @@ export const postTweet = async (content: string, imageBase64?: string): Promise<
     };
   } catch (error: any) {
     console.error('Post tweet error:', error);
-    throw error;
+    throw new Error(`Failed to post: ${error.message}`);
   }
 };
 
@@ -171,14 +175,19 @@ export const getUserTimeline = async (): Promise<any[]> => {
     });
 
     if (!response.ok) {
-      throw new Error('Failed to fetch timeline');
+      const contentType = response.headers.get('content-type');
+      if (contentType && contentType.includes('application/json')) {
+        const error = await response.json();
+        throw new Error(error.message || 'Failed to fetch timeline');
+      }
+      throw new Error(`Server error! status: ${response.status}`);
     }
 
     const data = await response.json();
     return data.tweets || [];
   } catch (error: any) {
     console.error('Timeline error:', error);
-    throw error;
+    throw new Error(`Failed to fetch timeline: ${error.message}`);
   }
 };
 
@@ -195,13 +204,18 @@ export const searchTweets = async (query: string, maxResults: number = 10): Prom
     });
 
     if (!response.ok) {
-      throw new Error('Failed to search tweets');
+      const contentType = response.headers.get('content-type');
+      if (contentType && contentType.includes('application/json')) {
+        const error = await response.json();
+        throw new Error(error.message || 'Failed to search tweets');
+      }
+      throw new Error(`Server error! status: ${response.status}`);
     }
 
     const data = await response.json();
     return data.tweets || [];
   } catch (error: any) {
     console.error('Search error:', error);
-    throw error;
+    throw new Error(`Failed to search tweets: ${error.message}`);
   }
 };

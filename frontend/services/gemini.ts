@@ -1,6 +1,6 @@
 import { CrawlResult, GeneratedPost } from "../types";
 
-const API_BASE_URL = process.env.BACKEND_URL || 'http://localhost:3001';
+const API_BASE_URL = import.meta.env.VITE_BACKEND_URL || 'http://localhost:3001';
 console.log('API_BASE_URL:', API_BASE_URL);
 
 export const planWorkflow = async (intent: string): Promise<any> => {
@@ -14,13 +14,18 @@ export const planWorkflow = async (intent: string): Promise<any> => {
     });
 
     if (!response.ok) {
-      throw new Error(`HTTP error! status: ${response.status}`);
+      const contentType = response.headers.get('content-type');
+      if (contentType && contentType.includes('application/json')) {
+        const error = await response.json();
+        throw new Error(error.message || `HTTP error! status: ${response.status}`);
+      }
+      throw new Error(`Server error! status: ${response.status}`);
     }
 
     return await response.json();
-  } catch (error) {
+  } catch (error: any) {
     console.error('Error in planWorkflow:', error);
-    throw error;
+    throw new Error(`Failed to plan workflow: ${error.message}`);
   }
 };
 
@@ -35,13 +40,18 @@ export const scanTopic = async (topic: string): Promise<CrawlResult> => {
     });
 
     if (!response.ok) {
-      throw new Error(`HTTP error! status: ${response.status}`);
+      const contentType = response.headers.get('content-type');
+      if (contentType && contentType.includes('application/json')) {
+        const error = await response.json();
+        throw new Error(error.message || `HTTP error! status: ${response.status}`);
+      }
+      throw new Error(`Server error! status: ${response.status}`);
     }
 
     return await response.json();
-  } catch (error) {
+  } catch (error: any) {
     console.error('Error in scanTopic:', error);
-    throw error;
+    throw new Error(`Failed to scan topic: ${error.message}`);
   }
 };
 
@@ -70,13 +80,18 @@ export const generatePost = async (
     });
 
     if (!response.ok) {
-      throw new Error(`HTTP error! status: ${response.status}`);
+      const contentType = response.headers.get('content-type');
+      if (contentType && contentType.includes('application/json')) {
+        const error = await response.json();
+        throw new Error(error.message || `HTTP error! status: ${response.status}`);
+      }
+      throw new Error(`Server error! status: ${response.status}`);
     }
 
     return await response.json();
-  } catch (error) {
+  } catch (error: any) {
     console.error('Error in generatePost:', error);
-    throw error;
+    throw new Error(`Failed to generate post: ${error.message}`);
   }
 };
 
@@ -101,13 +116,18 @@ export const generateImage = async (
     });
 
     if (!response.ok) {
-      throw new Error(`HTTP error! status: ${response.status}`);
+      const contentType = response.headers.get('content-type');
+      if (contentType && contentType.includes('application/json')) {
+        const error = await response.json();
+        throw new Error(error.message || `HTTP error! status: ${response.status}`);
+      }
+      throw new Error(`Server error! status: ${response.status}`);
     }
 
     const data = await response.json();
     return data.images || [];
-  } catch (error) {
+  } catch (error: any) {
     console.error('Error in generateImage:', error);
-    throw error;
+    throw new Error(`Failed to generate image: ${error.message}`);
   }
 };
