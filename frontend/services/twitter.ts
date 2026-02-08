@@ -142,7 +142,10 @@ export const postTweet = async (content: string, imageBase64?: string): Promise<
     const response = await fetch(`${BACKEND_URL}/api/twitter/tweet`, {
       method: 'POST',
       headers: getAuthHeaders(),
-      body: JSON.stringify({ text: content })
+      body: JSON.stringify({ 
+        text: content,
+        imageBase64: imageBase64 // Send image if provided
+      })
     });
 
     if (!response.ok) {

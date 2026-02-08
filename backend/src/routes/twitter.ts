@@ -37,19 +37,43 @@ const getTwitterClient = (req: Request): TwitterApi => {
 /**
  * Post a tweet
  */
-/**
- * Post a tweet
- */
 router.post('/tweet', authenticateJWT, async (req: Request, res: Response) => {
   try {
-    const { text } = req.body;
+    const { text, imageBase64 } = req.body;
 
     if (!text) {
       return res.status(400).json({ error: 'Tweet text is required' });
     }
 
     const client = getTwitterClient(req);
-    const tweet = await client.v2.tweet(text);
+    
+    let mediaId: string | undefined;
+    
+    // Upload image if provided
+    if (imageBase64) {
+      try {
+        // Remove data:image/xxx;base64, prefix if present
+        const base64Data = imageBase64.replace(/^data:image\/\w+;base64,/, '');
+        const buffer = Buffer.from(base64Data, 'base64');
+        
+        // Upload media to Twitter
+        mediaId = await client.v1.uploadMedia(buffer, { mimeType: 'image/png' });
+      } catch (uploadError: any) {
+        console.error('Error uploading media:', uploadError);
+        return res.status(500).json({
+          error: 'Failed to upload media',
+          message: uploadError.message
+        });
+      }
+    }
+    
+    // Post tweet with or without media
+    const tweetPayload: any = { text };
+    if (mediaId) {
+      tweetPayload.media = { media_ids: [mediaId] };
+    }
+    
+    const tweet = await client.v2.tweet(tweetPayload);
 
     res.json({
       success: true,
