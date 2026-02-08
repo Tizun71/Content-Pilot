@@ -1,5 +1,5 @@
 // Twitter OAuth via Backend Server
-const BACKEND_URL = import.meta.env.VITE_BACKEND_URL || 'http://localhost:3001';
+const BACKEND_URL = import.meta.env.VITE_BACKEND_URL || 'https://content-pilot-backend.vercel.app';
 
 // Helper function to get auth headers with JWT
 const getAuthHeaders = () => {
