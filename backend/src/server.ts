@@ -5,6 +5,7 @@ import cookieParser from 'cookie-parser';
 import { config, validateConfig } from './config/index.js';
 import geminiRoutes from './routes/gemini.js';
 import authRoutes from './routes/auth.js';
+import twitterRoutes from './routes/twitter.js';
 
 const app = express();
 
@@ -61,6 +62,7 @@ app.get('/health', (req, res) => {
 // API Routes
 app.use('/auth', authRoutes);
 app.use('/api/gemini', geminiRoutes);
+app.use('/api/twitter', twitterRoutes);
 
 // Root endpoint
 app.get('/', (req, res) => {

@@ -1,47 +1,46 @@
 import { Router, Request, Response } from 'express';
 import { TwitterApi } from 'twitter-api-v2';
-
-// Extend Express Session
-interface TwitterSession {
-  twitter?: {
-    accessToken: string;
-    refreshToken?: string;
-    expiresIn: number;
-    user: {
-      id: string;
-      name: string;
-      username: string;
-      profile_image_url?: string;
-      description?: string;
-    };
-  };
-}
+import jwt from 'jsonwebtoken';
+import { config } from '../config/index.js';
 
 const router = Router();
 
 /**
- * Middleware to check if user is authenticated
+ * Middleware to verify JWT token and extract Twitter credentials
  */
-const requireAuth = (req: Request, res: Response, next: any) => {
-  const session = req.session as TwitterSession;
-  if (!session.twitter || !session.twitter.accessToken) {
-    return res.status(401).json({ error: 'Authentication required' });
+const authenticateJWT = (req: Request, res: Response, next: any) => {
+  const authHeader = req.headers.authorization;
+  const token = authHeader && authHeader.split(' ')[1]; // Bearer TOKEN
+
+  if (!token) {
+    return res.status(401).json({ error: 'No token provided' });
   }
-  next();
+
+  try {
+    const decoded = jwt.verify(token, config.jwt.secret as string) as any;
+    (req as any).user = decoded;
+    next();
+  } catch (error) {
+    return res.status(401).json({ error: 'Invalid or expired token' });
+  }
 };
 
 /**
- * Get authenticated Twitter client
+ * Get authenticated Twitter client from JWT
  */
 const getTwitterClient = (req: Request): TwitterApi => {
-  const { accessToken } = (req.session as TwitterSession).twitter!;
+  const userData = (req as any).user;
+  const { accessToken } = userData.twitter;
   return new TwitterApi(accessToken);
 };
 
 /**
  * Post a tweet
  */
-router.post('/tweet', requireAuth, async (req: Request, res: Response) => {
+/**
+ * Post a tweet
+ */
+router.post('/tweet', authenticateJWT, async (req: Request, res: Response) => {
   try {
     const { text } = req.body;
 
@@ -68,10 +67,11 @@ router.post('/tweet', requireAuth, async (req: Request, res: Response) => {
 /**
  * Get user timeline
  */
-router.get('/timeline', requireAuth, async (req: Request, res: Response) => {
+router.get('/timeline', authenticateJWT, async (req: Request, res: Response) => {
   try {
     const client = getTwitterClient(req);
-    const user = (req.session as TwitterSession).twitter!.user;
+    const userData = (req as any).user;
+    const user = userData.twitter.user;
 
     const timeline = await client.v2.userTimeline(user.id, {
       max_results: 10,
@@ -94,7 +94,7 @@ router.get('/timeline', requireAuth, async (req: Request, res: Response) => {
 /**
  * Search tweets
  */
-router.get('/search', requireAuth, async (req: Request, res: Response) => {
+router.get('/search', authenticateJWT, async (req: Request, res: Response) => {
   try {
     const { query, maxResults = 10 } = req.query;
 
@@ -124,7 +124,7 @@ router.get('/search', requireAuth, async (req: Request, res: Response) => {
 /**
  * Delete a tweet
  */
-router.delete('/tweet/:id', requireAuth, async (req: Request, res: Response) => {
+router.delete('/tweet/:id', authenticateJWT, async (req: Request, res: Response) => {
   try {
     const { id } = req.params;
     const client = getTwitterClient(req);
@@ -147,7 +147,7 @@ router.delete('/tweet/:id', requireAuth, async (req: Request, res: Response) => 
 /**
  * Get user profile
  */
-router.get('/profile/:username', requireAuth, async (req: Request, res: Response) => {
+router.get('/profile/:username', authenticateJWT, async (req: Request, res: Response) => {
   try {
     const { username } = req.params;
     const client = getTwitterClient(req);
